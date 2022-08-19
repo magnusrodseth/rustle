@@ -33,6 +33,23 @@ pub enum Correctness {
 }
 
 impl Correctness {
+    /// Computes the correctness of a guess.
+    ///
+    /// ## Parameters
+    ///
+    /// answer - is the answer to check the guess against
+    /// guess - is the provided guess to check
+    ///
+    /// ## Returns
+    ///
+    /// An array of `Correctness` with fized size 5.
+    /// This resembles what parts of the guess was `Correct`, `Misplaced`, or `Wrong`.
+    ///
+    /// ## Examples
+    ///
+    /// `Correctness::compute("abcde", "abcde")` => `[Correctness::Correct; 5]`
+    /// `Correctness::compute("01234", "abcde")` => `[Correctness::Wrong; 5]`
+    /// `Correctness::compute("abcde", "eabcd")` => `[Correctness::Misplaced; 5]`
     fn compute(answer: &str, guess: &str) -> [Self; 5] {
         assert_eq!(answer.len(), 5);
         assert_eq!(guess.len(), 5);
@@ -86,6 +103,7 @@ pub trait Guesser {
 #[cfg(test)]
 mod tests {
     mod compute {
+        /// mask![C C C C C] ==> All computed "correctnesses" are correct
         macro_rules! mask {
             (C) => {Correctness::Correct};
             (M) => {Correctness::Misplaced};
@@ -96,6 +114,7 @@ mod tests {
         }
 
         use crate::Correctness;
+
         #[test]
         fn all_correct() {
             assert_eq!(Correctness::compute("abcde", "abcde"), mask![C C C C C]);
