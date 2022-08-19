@@ -1,12 +1,44 @@
-use rustle::{algorithms::Naive, Wordle};
+use clap::{ArgEnum, Parser};
+use rustle::{algorithms::Naive, Guesser, Wordle};
 
 const GAMES: &str = include_str!("../answers.txt");
 
-fn main() {
-    let wordle = Wordle::default();
+/// TODO
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+    /// TODO
+    #[clap(short, long, arg_enum)]
+    implementation: Implementation,
 
-    for answer in GAMES.split_whitespace() {
-        let guesser = Naive::new();
+    /// TODO
+    #[clap(short, long)]
+    max: Option<usize>,
+}
+
+#[derive(ArgEnum, Debug, Clone, Copy)]
+enum Implementation {
+    Naive,
+}
+
+fn main() {
+    let args = Args::parse();
+
+    match args.implementation {
+        Implementation::Naive => play(Naive::new, args.max),
+    }
+}
+
+/// Plays Wordle based on a provided guesser.
+fn play<G>(mut maker: impl FnMut() -> G, max: Option<usize>)
+where
+    G: Guesser,
+{
+    let wordle = Wordle::default();
+    let games_to_play = GAMES.split_whitespace().take(max.unwrap_or(usize::MAX));
+
+    for answer in games_to_play {
+        let guesser = (maker)();
         if let Some(score) = wordle.play(answer, guesser) {
             println!("guessed {} in {} turns", answer, score);
         } else {
