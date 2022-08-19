@@ -7,6 +7,10 @@ fn main() {
 
     for answer in GAMES.split_whitespace() {
         let guesser = Naive::new();
-        wordle.play(answer, guesser);
+        if let Some(score) = wordle.play(answer, guesser) {
+            println!("guessed {} in {} turns", answer, score);
+        } else {
+            eprintln!("Failed to guess!");
+        }
     }
 }

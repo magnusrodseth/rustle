@@ -115,6 +115,17 @@ impl Correctness {
 
         correctness
     }
+
+    pub fn patterns() -> impl Iterator<Item = [Self; 5]> {
+        itertools::iproduct!(
+            [Self::Correct, Self::Misplaced, Self::Wrong],
+            [Self::Correct, Self::Misplaced, Self::Wrong],
+            [Self::Correct, Self::Misplaced, Self::Wrong],
+            [Self::Correct, Self::Misplaced, Self::Wrong],
+            [Self::Correct, Self::Misplaced, Self::Wrong]
+        )
+        .map(|(a, b, c, d, e)| [a, b, c, d, e])
+    }
 }
 
 pub struct Guess {
@@ -230,25 +241,27 @@ mod tests {
         }
 
     mod guess_matcher {
-        use crate::Guess;
-
         macro_rules! check {
             // Allows
             ($previous:literal + [$($mask:tt)+] allows $next:literal) => {
-            assert!(Guess {
-                word: $previous.to_string(),
-                mask: mask![$($mask )+],
-            }
-            .matches($next))
+                assert!($crate::Guess {
+                    word: $previous.to_string(),
+                    mask: mask![$($mask )+],
+                }
+                .matches($next));
+
+                assert_eq!($crate::Correctness::compute($next, $previous), mask![$($mask )+]);
             };
 
             // Disallows
             ($previous:literal + [$($mask:tt)+] disallows $next:literal) => {
-            assert!(!(Guess {
-                word: $previous.to_string(),
-                mask: mask![$($mask )+],
-            }
-            .matches($next)))
+                assert!(!($crate::Guess {
+                    word: $previous.to_string(),
+                    mask: mask![$($mask )+],
+                }
+                .matches($next)));
+
+                assert_ne!($crate::Correctness::compute($next, $previous), mask![$($mask )+]);
             };
         }
 

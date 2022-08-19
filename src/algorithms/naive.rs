@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{Guess, Guesser, DICTIONARY};
+use crate::{Correctness, Guess, Guesser, DICTIONARY};
 
 pub struct Naive {
     remaining: HashMap<&'static str, usize>,
@@ -33,7 +33,7 @@ impl Default for Naive {
 #[derive(Debug, Copy, Clone)]
 struct Candidate {
     word: &'static str,
-    count: usize,
+    /// The score measures how good the candidate is. A higher score means a better candidate.
     score: f64,
 }
 
@@ -43,19 +43,50 @@ impl Guesser for Naive {
             self.remaining.retain(|word, _| last.matches(word))
         }
 
+        if history.is_empty() {
+            return "tares".to_string();
+        }
+
+        let remaining_count: usize = self.remaining.iter().map(|(_, &count)| count).sum();
+
         let mut best: Option<Candidate> = None;
 
-        for (&word, &count) in &self.remaining {
-            // TODO: Compute this
-            let score: f64 = 0.0;
+        for (&word, &_) in &self.remaining {
+            let mut sum = 0.0;
+
+            // We guessed `word` and got `pattern` as correctness.
+            // Now, compute what **then** is `left_in_pattern`.
+            for pattern in Correctness::patterns() {
+                let mut in_pattern_total = 0;
+
+                for (candidate, count) in &self.remaining {
+                    let guess = Guess {
+                        word: word.to_string(),
+                        mask: pattern,
+                    };
+
+                    if guess.matches(candidate) {
+                        in_pattern_total += count;
+                    }
+                }
+
+                // Source: https://en.wikipedia.org/wiki/Information_theory#Entropy_of_an_information_source
+                if in_pattern_total == 0 {
+                    continue;
+                }
+                let probability_of_pattern = in_pattern_total as f64 / remaining_count as f64;
+                sum += probability_of_pattern * probability_of_pattern.log2();
+            }
+
+            let score = 0.0 - sum;
 
             if let Some(candidate) = best {
                 // Determine if the current candidate is better than the current best
                 if score > candidate.score {
-                    best = Some(Candidate { word, count, score })
+                    best = Some(Candidate { word, score })
                 }
             } else {
-                best = Some(Candidate { word, count, score })
+                best = Some(Candidate { word, score })
             }
         }
 
