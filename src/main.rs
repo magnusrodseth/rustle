@@ -1,5 +1,8 @@
 use clap::{ArgEnum, Parser};
-use rustle::{algorithms::Naive, Guesser, Wordle};
+use rustle::{
+    algorithms::{Allocations, Naive},
+    Guesser, Wordle,
+};
 
 const GAMES: &str = include_str!("../answers.txt");
 
@@ -19,6 +22,7 @@ struct Args {
 #[derive(ArgEnum, Debug, Clone, Copy)]
 enum Implementation {
     Naive,
+    Allocations,
 }
 
 fn main() {
@@ -26,6 +30,7 @@ fn main() {
 
     match args.implementation {
         Implementation::Naive => play(Naive::new, args.max),
+        Implementation::Allocations => play(Allocations::new, args.max),
     }
 }
 

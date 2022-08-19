@@ -135,86 +135,9 @@ pub struct Guess<'a> {
 
 impl Guess<'_> {
     fn matches(&self, word: &str) -> bool {
-        assert_eq!(self.word.len(), 5);
-        assert_eq!(word.len(), 5);
-        let mut used = [false; 5];
-
-        // Check for correct characters
-        for (i, ((g, &m), w)) in self
-            .word
-            .bytes()
-            .zip(&self.mask)
-            .zip(word.bytes())
-            .enumerate()
-        {
-            if m == Correctness::Correct {
-                if g != w {
-                    return false;
-                } else {
-                    used[i] = true;
-                }
-            }
-        }
-
-        // Check misplaced characters
-        for (i, (w, &m)) in word.bytes().zip(&self.mask).enumerate() {
-            if m == Correctness::Correct {
-                // This must be correct, or else we would have returned in the loop above
-                continue;
-            }
-
-            let mut plausible = true;
-
-            // Look for the first unused occurence of the current character in the previous guess
-            if self
-                .word
-                .bytes()
-                .zip(&self.mask)
-                .enumerate()
-                .any(|(j, (g, m))| {
-                    if g != w {
-                        return false;
-                    }
-                    if used[j] {
-                        return false;
-                    }
-
-                    // We're inspecting the current letter (`A`) in `self.word`, and we have found
-                    // an 'A' in the previous guess. The color of the previous 'A'
-                    // tells us whether this 'A' **might** be okay.
-                    match m {
-                        Correctness::Correct => unreachable!(
-                            "All correct guesses should have been returned or marked as used."
-                        ),
-                        Correctness::Misplaced if j == i => {
-                            // The current letter was in the same **misplaced** position the
-                            // previous guess, making the current word not the answer.
-                            plausible = false;
-                            false
-                        }
-                        Correctness::Misplaced => {
-                            used[j] = true;
-                            true
-                        }
-                        Correctness::Wrong => {
-                            // TODO: early return
-                            plausible = false;
-                            false
-                        }
-                    }
-                })
-                && plausible
-            {
-                // The current character was misplaced in the previous guess
-            } else if !plausible {
-                return false;
-            } else {
-                // We have no information about about the current character,
-                // so the word might still match.
-            }
-        }
-
-        true
+        // If guess G gives mask C against answer A,
+        // then guess A should also give mask C against answer G.
+        Correctness::compute(word, &self.word) == self.mask
     }
 }
 
