@@ -14,7 +14,7 @@ impl Wordle {
         let dictionary = HashSet::from_iter(DICTIONARY.lines().map(|line| {
             line.split_once(' ')
                 .expect("Every line consists of `word frequency`")
-                .1
+                .0
         }));
         Self { dictionary }
     }
@@ -150,7 +150,7 @@ mod tests {
         }
 
         #[test]
-        fn can_play() {
+        fn genius() {
             let wordle = Wordle::default();
 
             let guesser = guesser!(|_history| { "abcde".to_string() });
@@ -158,7 +158,92 @@ mod tests {
 
             assert_eq!(guess_iteration, Some(1));
         }
+
+        #[test]
+        fn magnificent() {
+            let wordle = Wordle::default();
+
+            let guesser = guesser!(|history| {
+                if history.len() == 1 {
+                    return "right".to_string();
+                }
+                "wrong".to_string()
+            });
+
+            let guess_iteration = wordle.play("right", guesser);
+            assert_eq!(guess_iteration, Some(2));
+        }
+
+        #[test]
+        fn impressive() {
+            let wordle = Wordle::default();
+
+            let guesser = guesser!(|history| {
+                if history.len() == 2 {
+                    return "right".to_string();
+                }
+                "wrong".to_string()
+            });
+
+            let guess_iteration = wordle.play("right", guesser);
+            assert_eq!(guess_iteration, Some(3));
+        }
+        #[test]
+        fn splendid() {
+            let wordle = Wordle::default();
+
+            let guesser = guesser!(|history| {
+                if history.len() == 3 {
+                    return "right".to_string();
+                }
+                "wrong".to_string()
+            });
+
+            let guess_iteration = wordle.play("right", guesser);
+            assert_eq!(guess_iteration, Some(4));
+        }
+
+        #[test]
+        fn great() {
+            let wordle = Wordle::default();
+
+            let guesser = guesser!(|history| {
+                if history.len() == 4 {
+                    return "right".to_string();
+                }
+                "wrong".to_string()
+            });
+
+            let guess_iteration = wordle.play("right", guesser);
+            assert_eq!(guess_iteration, Some(5));
+        }
+
+        #[test]
+        fn phew() {
+            let wordle = Wordle::default();
+
+            let guesser = guesser!(|history| {
+                if history.len() == 5 {
+                    return "right".to_string();
+                }
+                "wrong".to_string()
+            });
+
+            let guess_iteration = wordle.play("right", guesser);
+            assert_eq!(guess_iteration, Some(6));
+        }
+
+        #[test]
+        fn oops() {
+            let wordle = Wordle::default();
+
+            let guesser = guesser!(|_history| { "wrong".to_string() });
+
+            let guess_iteration = wordle.play("right", guesser);
+            assert_eq!(guess_iteration, None);
+        }
     }
+
     mod compute {
         /// mask![C C C C C] ==> All computed "correctnesses" are correct
         macro_rules! mask {
