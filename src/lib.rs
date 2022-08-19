@@ -115,5 +115,15 @@ mod tests {
         fn repeat_correct() {
             assert_eq!(Correctness::compute("aabbb", "aaccc"), mask!(C C W W W))
         }
+
+        #[test]
+        fn repeat_misplaced() {
+            assert_eq!(Correctness::compute("aabbb", "ccaac"), mask!(W W M M W))
+        }
+
+        #[test]
+        fn repeat_some_green() {
+            assert_eq!(Correctness::compute("aabbb", "caacc"), mask!(W C M W W))
+        }
     }
 }
