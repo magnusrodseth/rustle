@@ -276,6 +276,7 @@ mod tests {
             check!("aaabb" + [C M W W W] disallows "accaa");
             check!("baaaa" + [W C M W W] allows "aaccc");
             check!("baaaa" + [W C M W W] disallows "caacc");
+            check!("tares" + [W M M W W] disallows "brink");
         }
     }
     mod wordle {
