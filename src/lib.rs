@@ -122,6 +122,91 @@ pub struct Guess {
     mask: [Correctness; WORD_LENGTH],
 }
 
+impl Guess {
+    fn matches(&self, word: &str) -> bool {
+        assert_eq!(self.word.len(), 5);
+        assert_eq!(word.len(), 5);
+        let mut used = [false; 5];
+
+        // Check for correct characters
+        for (i, ((g, &m), w)) in self
+            .word
+            .chars()
+            .zip(&self.mask)
+            .zip(word.chars())
+            .enumerate()
+        {
+            if m == Correctness::Correct {
+                if g != w {
+                    return false;
+                } else {
+                    used[i] = true;
+                }
+            }
+        }
+
+        // Check misplaced characters
+        for (i, (w, &m)) in word.chars().zip(&self.mask).enumerate() {
+            if m == Correctness::Correct {
+                // This must be correct, or else we would have returned in the loop above
+                continue;
+            }
+
+            let mut plausible = true;
+
+            // Look for the first unused occurence of the current character in the previous guess
+            if self
+                .word
+                .chars()
+                .zip(&self.mask)
+                .enumerate()
+                .any(|(j, (g, m))| {
+                    if g != w {
+                        return false;
+                    }
+                    if used[j] {
+                        return false;
+                    }
+
+                    // We're inspecting the current letter (`A`) in `self.word`, and we have found
+                    // an 'A' in the previous guess. The color of the previous 'A'
+                    // tells us whether this 'A' **might** be okay.
+                    match m {
+                        Correctness::Correct => unreachable!(
+                            "All correct guesses should have been returned or marked as used."
+                        ),
+                        Correctness::Misplaced if j == i => {
+                            // The current letter was in the same **misplaced** position the
+                            // previous guess, making the current word not the answer.
+                            plausible = false;
+                            false
+                        }
+                        Correctness::Misplaced => {
+                            used[j] = true;
+                            true
+                        }
+                        Correctness::Wrong => {
+                            // TODO: early return
+                            plausible = false;
+                            false
+                        }
+                    }
+                })
+                && plausible
+            {
+                // The current character was misplaced in the previous guess
+            } else if !plausible {
+                return false;
+            } else {
+                // We have no information about about the current character,
+                // so the word might still match.
+            }
+        }
+
+        true
+    }
+}
+
 pub trait Guesser {
     fn guess(&mut self, history: &[Guess]) -> String;
 }
@@ -134,6 +219,50 @@ impl Guesser for fn(history: &[Guess]) -> String {
 
 #[cfg(test)]
 mod tests {
+    /// mask![C C C C C] ==> All computed "correctnesses" are correct
+    macro_rules! mask {
+            (C) => {$crate::Correctness::Correct};
+            (M) => {$crate::Correctness::Misplaced};
+            (W) => {$crate::Correctness::Wrong};
+            ($($c:tt)+) => {[
+                $(mask!($c)),+
+            ]}
+        }
+
+    mod guess_matcher {
+        use crate::Guess;
+
+        macro_rules! check {
+            // Allows
+            ($previous:literal + [$($mask:tt)+] allows $next:literal) => {
+            assert!(Guess {
+                word: $previous.to_string(),
+                mask: mask![$($mask )+],
+            }
+            .matches($next))
+            };
+
+            // Disallows
+            ($previous:literal + [$($mask:tt)+] disallows $next:literal) => {
+            assert!(!(Guess {
+                word: $previous.to_string(),
+                mask: mask![$($mask )+],
+            }
+            .matches($next)))
+            };
+        }
+
+        #[test]
+        fn matches() {
+            check!("abcde" + [C C C C C] allows "abcde");
+            check!("abcdf" + [C C C C C] disallows "abcde");
+            check!("abcde" + [W W W W W] allows "01234");
+            check!("abcde" + [M M M M M] allows "eabcd");
+            check!("aaabb" + [C M W W W] disallows "accaa");
+            check!("baaaa" + [W C M W W] allows "aaccc");
+            check!("baaaa" + [W C M W W] disallows "caacc");
+        }
+    }
     mod wordle {
         use crate::{Guess, Wordle};
 
@@ -245,16 +374,6 @@ mod tests {
     }
 
     mod compute {
-        /// mask![C C C C C] ==> All computed "correctnesses" are correct
-        macro_rules! mask {
-            (C) => {Correctness::Correct};
-            (M) => {Correctness::Misplaced};
-            (W) => {Correctness::Wrong};
-            ($($c:tt)+) => {[
-                $(mask!($c)),+
-            ]}
-        }
-
         use crate::Correctness;
 
         #[test]
