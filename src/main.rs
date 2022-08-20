@@ -47,7 +47,7 @@ where
     for answer in games_to_play {
         let guesser = (maker)();
         if let Some(score) = wordle.play(answer, guesser) {
-            println!("guessed {} in {} turns", answer, score);
+            println!("Guessed '{}' in {} turns.", answer, score);
         } else {
             eprintln!("Failed to guess!");
         }
