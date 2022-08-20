@@ -1,9 +1,9 @@
-use std::{borrow::Cow, collections::HashMap};
+use std::collections::HashMap;
 
-use crate::{Correctness, Guess, Guesser, DICTIONARY};
+use crate::{Correctness, Guess, Guesser, Word, DICTIONARY};
 
 pub struct Allocations {
-    remaining: HashMap<&'static str, usize>,
+    remaining: HashMap<Word, usize>,
 }
 
 impl Allocations {
@@ -16,6 +16,11 @@ impl Allocations {
             let count: usize = count
                 .parse()
                 .expect("Every count must be an unsigned integer");
+
+            let word = word
+                .as_bytes()
+                .try_into()
+                .expect("Every word should be of length 5.");
 
             (word, count)
         }));
@@ -32,19 +37,19 @@ impl Default for Allocations {
 
 #[derive(Debug, Copy, Clone)]
 struct Candidate {
-    word: &'static str,
+    word: Word,
     /// The score measures how good the candidate is. A higher score means a better candidate.
     score: f64,
 }
 
 impl Guesser for Allocations {
-    fn guess(&mut self, history: &[Guess]) -> String {
+    fn guess(&mut self, history: &[Guess]) -> Word {
         if let Some(last) = history.last() {
-            self.remaining.retain(|word, _| last.matches(word))
+            self.remaining.retain(|word, _| last.matches(*word))
         }
 
         if history.is_empty() {
-            return "tares".to_string();
+            return *b"tares";
         }
 
         let remaining_count: usize = self.remaining.iter().map(|(_, &count)| count).sum();
@@ -61,11 +66,11 @@ impl Guesser for Allocations {
 
                 for (candidate, count) in &self.remaining {
                     let guess = Guess {
-                        word: Cow::Borrowed(word),
+                        word,
                         mask: pattern,
                     };
 
-                    if guess.matches(candidate) {
+                    if guess.matches(*candidate) {
                         in_pattern_total += count;
                     }
                 }
@@ -91,6 +96,6 @@ impl Guesser for Allocations {
         }
 
         // TODO: Handle unwrap here
-        best.unwrap().word.to_string()
+        best.unwrap().word
     }
 }

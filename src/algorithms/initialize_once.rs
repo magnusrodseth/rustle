@@ -1,11 +1,11 @@
 use once_cell::sync::OnceCell;
 use std::borrow::Cow;
 
-use crate::{Correctness, Guess, Guesser, DICTIONARY};
+use crate::{Correctness, Guess, Guesser, Word, DICTIONARY};
 
 #[derive(Clone, Copy)]
 struct DictionaryEntry {
-    word: &'static str,
+    word: Word,
     count: usize,
 }
 
@@ -27,6 +27,11 @@ impl InitializeOnce {
                     .parse()
                     .expect("Every count must be an unsigned integer");
 
+                let word = word
+                    .as_bytes()
+                    .try_into()
+                    .expect("Every word should be of length 5.");
+
                 DictionaryEntry { word, count }
             }))
         }));
@@ -43,13 +48,13 @@ impl Default for InitializeOnce {
 
 #[derive(Debug, Copy, Clone)]
 struct Candidate {
-    word: &'static str,
+    word: Word,
     /// The score measures how good the candidate is. A higher score means a better candidate.
     score: f64,
 }
 
 impl Guesser for InitializeOnce {
-    fn guess(&mut self, history: &[Guess]) -> String {
+    fn guess(&mut self, history: &[Guess]) -> Word {
         if let Some(last) = history.last() {
             if matches!(self.remaining, Cow::Owned(_)) {
                 self.remaining
@@ -67,7 +72,7 @@ impl Guesser for InitializeOnce {
         }
 
         if history.is_empty() {
-            return "tares".to_string();
+            return *b"tares";
         }
 
         let remaining_count: usize = self.remaining.iter().map(|entry| entry.count).sum();
@@ -85,7 +90,7 @@ impl Guesser for InitializeOnce {
 
                 for entry in &*self.remaining {
                     let guess = Guess {
-                        word: Cow::Borrowed(word),
+                        word,
                         mask: pattern,
                     };
 
@@ -115,6 +120,6 @@ impl Guesser for InitializeOnce {
         }
 
         // TODO: Handle unwrap here
-        best.unwrap().word.to_string()
+        best.unwrap().word
     }
 }
