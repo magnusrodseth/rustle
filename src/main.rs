@@ -1,6 +1,6 @@
 use clap::{ArgEnum, Parser};
 use rustle::{
-    algorithms::{Allocations, InitializeOnce, Naive, VecRemaining},
+    algorithms::{Allocations, InitializeOnce, Naive, Prune, VecRemaining, Weight},
     Guesser, Wordle,
 };
 
@@ -25,6 +25,8 @@ enum Implementation {
     Allocations,
     VecRemaining,
     InitializeOnce,
+    Weight,
+    Prune,
 }
 
 fn main() {
@@ -35,6 +37,8 @@ fn main() {
         Implementation::Allocations => play(Allocations::new, args.max),
         Implementation::VecRemaining => play(VecRemaining::new, args.max),
         Implementation::InitializeOnce => play(InitializeOnce::new, args.max),
+        Implementation::Weight => play(Weight::new, args.max),
+        Implementation::Prune => play(Prune::new, args.max),
     }
 }
 
